@@ -3,6 +3,7 @@ package com.consultadd.CURDApp.services;
 
 import com.consultadd.CURDApp.Modals.Employee;
 import com.consultadd.CURDApp.dto.EmployeeDTO;
+import com.consultadd.CURDApp.exception.ResourceNotFoundException;
 import com.consultadd.CURDApp.repositories.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,33 +28,31 @@ public class EmployeeService {
     }
 
     public EmployeeDTO getEmployeeById(Long id) {
-        Optional<Employee> employee = employeeRepository.findById(id);
-        return employee.map(this::convertToDTO).orElse(null);
+        Employee employee = employeeRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Employee", "id", id));
+        return convertToDTO(employee);
     }
 
     public EmployeeDTO createEmployee(EmployeeDTO employeeDTO) {
         employeeDTO.setId(null);
+
         Employee employee = convertToEntity(employeeDTO);
         Employee savedEmployee = employeeRepository.save(employee);
         return convertToDTO(savedEmployee);
     }
 
     public EmployeeDTO updateEmployee(Long id, EmployeeDTO employeeDTO) {
-        if (employeeRepository.existsById(id)) {
-            Employee employee = convertToEntity(employeeDTO);
-            employee.setId(id);
-            Employee updatedEmployee = employeeRepository.save(employee);
-            return convertToDTO(updatedEmployee);
-        }
-        return null;
+        employeeRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Employee", "id", id));
+
+        Employee employee = convertToEntity(employeeDTO);
+        employee.setId(id);
+        Employee updatedEmployee = employeeRepository.save(employee);
+        return convertToDTO(updatedEmployee);
     }
 
-    public boolean deleteEmployee(Long id) {
-        if (employeeRepository.existsById(id)) {
-            employeeRepository.deleteById(id);
-            return true;
-        }
-        return false;
+    public void deleteEmployee(Long id) {
+        employeeRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Employee", "id", id));
+
+        employeeRepository.deleteById(id);
     }
 
     private EmployeeDTO convertToDTO(Employee employee) {
