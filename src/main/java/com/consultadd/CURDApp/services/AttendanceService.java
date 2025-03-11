@@ -4,6 +4,8 @@ package com.consultadd.CURDApp.services;
 import com.consultadd.CURDApp.Modals.Attendence;
 import com.consultadd.CURDApp.Modals.Employee;
 import com.consultadd.CURDApp.dto.AttendanceDTO;
+import com.consultadd.CURDApp.exception.BadRequestException;
+import com.consultadd.CURDApp.exception.ResourceNotFoundException;
 import com.consultadd.CURDApp.repositories.AttendanceRepository;
 import com.consultadd.CURDApp.repositories.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,46 +28,44 @@ public class AttendanceService {
     }
 
     public AttendanceDTO checkIn(AttendanceDTO attendanceDTO) {
-        Optional<Employee> employeeOpt = employeeRepository.findById(attendanceDTO.getEmployeeId());
-
-        if (employeeOpt.isPresent()) {
-            Attendence attendance = new Attendence();
-            attendance.setEmployee(employeeOpt.get());
-            attendance.setCheckInTime(LocalDateTime.now());
-            attendance.setNote(attendanceDTO.getNotes());
-
-            Attendence savedAttendance = attendanceRepository.save(attendance);
-            return convertToDTO(savedAttendance);
+        if (attendanceDTO.getEmployeeId() == null) {
+            throw new BadRequestException("Employee ID is required for check-in");
         }
 
-        return null;
+        Employee employee = employeeRepository.findById(attendanceDTO.getEmployeeId())
+                .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", attendanceDTO.getEmployeeId()));
+
+        Attendence attendance = new Attendence();
+        attendance.setEmployee(employee);
+        attendance.setCheckInTime(LocalDateTime.now());
+        attendance.setNote(attendanceDTO.getNotes());
+
+        Attendence savedAttendance = attendanceRepository.save(attendance);
+        return convertToDTO(savedAttendance);
     }
 
     public AttendanceDTO checkOut(Long attendanceId) {
-        Optional<Attendence> attendanceOpt = attendanceRepository.findById(attendanceId);
+        Attendence attendance = attendanceRepository.findById(attendanceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Attendance", "id", attendanceId));
 
-        if (attendanceOpt.isPresent()) {
-            Attendence attendance = attendanceOpt.get();
-            attendance.setCheckOutTime(LocalDateTime.now());
-
-            Attendence updatedAttendance = attendanceRepository.save(attendance);
-            return convertToDTO(updatedAttendance);
+        if (attendance.getCheckOutTime() != null) {
+            throw new BadRequestException("Employee has already checked out for this attendance record");
         }
 
-        return null;
+        attendance.setCheckOutTime(LocalDateTime.now());
+
+        Attendence updatedAttendance = attendanceRepository.save(attendance);
+        return convertToDTO(updatedAttendance);
     }
 
     public List<AttendanceDTO> getAttendanceByEmployeeId(Long employeeId) {
-        Optional<Employee> employeeOpt = employeeRepository.findById(employeeId);
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", employeeId));
 
-        if (employeeOpt.isPresent()) {
-            List<Attendence> attendances = attendanceRepository.findByEmployee(employeeOpt.get());
-            return attendances.stream()
-                    .map(this::convertToDTO)
-                    .collect(Collectors.toList());
-        }
-
-        return List.of();
+        List<Attendence> attendances = attendanceRepository.findByEmployee(employee);
+        return attendances.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 
     public List<AttendanceDTO> getAllAttendance() {

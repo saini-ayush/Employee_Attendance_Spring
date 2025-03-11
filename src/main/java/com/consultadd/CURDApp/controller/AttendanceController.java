@@ -21,24 +21,15 @@ public class AttendanceController {
     }
 
     @PostMapping("/check-in")
-    public ResponseEntity<AttendanceDTO> checkIn(@RequestBody AttendanceDTO attendanceDTO){
-        AttendanceDTO attendance = attendanceService.checkIn(attendanceDTO);
-
-        if (attendance != null){
-            return ResponseEntity.status(HttpStatus.CREATED).body(attendance);
-        }
-
-        return ResponseEntity.badRequest().build();
+    public ResponseEntity<AttendanceDTO> checkIn(@RequestBody AttendanceDTO attendanceDTO) {
+        AttendanceDTO checkedIn = attendanceService.checkIn(attendanceDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(checkedIn);
     }
 
     @PutMapping("/check-out/{attendanceId}")
-    public ResponseEntity<AttendanceDTO> checkOut(@PathVariable Long attendanceId){
-        AttendanceDTO attendance = attendanceService.checkOut(attendanceId);
-
-        if(attendance != null){
-            return ResponseEntity.ok(attendance);
-        }
-        return ResponseEntity.badRequest().build();
+    public ResponseEntity<AttendanceDTO> checkOut(@PathVariable Long attendanceId) {
+        AttendanceDTO checkedOut = attendanceService.checkOut(attendanceId);
+        return ResponseEntity.ok(checkedOut);
     }
 
     @GetMapping("/employee/{employeeId}")
